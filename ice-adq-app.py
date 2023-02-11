@@ -102,15 +102,6 @@ def process_byte_packet(data: bytearray):
             byte_array_buffer.extend(data)
 
 
-# TIP: you can get this function and more from the ``more-itertools`` package.
-def sliced(data: bytes, n: int) -> Iterator[bytes]:
-    """
-    Slices *data* into chunks of size *n*. The last slice may be smaller than
-    *n*.
-    """
-    return takewhile(len, (data[i: i + n] for i in count(0, n)))
-
-
 async def uart_terminal():
     """This is a simple "terminal" program that uses the Nordic Semiconductor
     (nRF) UART service. It reads from stdin and sends each line of data to the
