@@ -5,7 +5,7 @@ An example showing how to write a simple program using the Nordic Semiconductor
 (nRF) UART service.
 """
 
-#import kivy
+# import kivy
 import asyncio
 import matplotlib.lines as Line2D
 import matplotlib.pyplot as plt
@@ -29,7 +29,7 @@ START_CHAR = bytes.fromhex("02")
 END_CHAR = bytes.fromhex("03")
 GROUP_SEPARATOR_CHAR = bytes.fromhex("1D")
 
-#kivy.require('1.9.0')
+# kivy.require('1.9.0')
 
 FoundStart = False
 FoundEnd = False
@@ -41,24 +41,27 @@ MIDDLE_MESSAGE = 2
 FOUND_END = 3
 process_byte_packet_state = 0
 
-tace_deque = deque()
-tadm_deque = deque()
-tesc_deque = deque()
+tace_deque = deque([(0, 0)], maxlen=20)
+tadm_deque = deque([(0, 0)], maxlen=20)
+tesc_deque = deque([(0, 0)], maxlen=20)
 
 TACE_LABEL = "Tace"
 TADM_LABEL = "Tadm"
 TESC_LABEL = "Tesc"
 
+
 def append_packet_to_deque(data: bytearray):
+    print(data)
     splitted = data.split(GROUP_SEPARATOR_CHAR)
-    decoded_tuple = {int(splitted[0].decode('ascii')), int(splitted[2].decode('ascii'))}
-    print(decoded_tuple)
-    if splitted[1] == TACE_LABEL:
-        tace_deque.append(decoded_tuple)
-    elif splitted[1] == TADM_LABEL:
-        tadm_deque.append(decoded_tuple)
-    elif splitted[1] == TESC_LABEL:
-        tesc_deque.append(decoded_tuple)
+    time = int(splitted[0].decode('ascii'))
+    value = int(splitted[2].decode('ascii'))
+    label = splitted[1].decode('ascii')
+    if label == TACE_LABEL:
+        tace_deque.append((time, value))
+    elif label == TADM_LABEL:
+        tadm_deque.append((time, value))
+    elif label == TESC_LABEL:
+        tesc_deque.append((time, value))
 
 
 def process_byte_packet(data: bytearray):
@@ -72,11 +75,11 @@ def process_byte_packet(data: bytearray):
         if start_char_index != -1:
             if start_char_index < end_char_index:
                 # We found a start and end in same packet. Just print it.
-                append_packet_to_deque(data[start_char_index+1:end_char_index])
+                append_packet_to_deque(data[start_char_index + 1:end_char_index])
                 return
             else:
                 process_byte_packet_state = FOUND_START
-                byte_array_buffer.extend(data[start_char_index+1:])
+                byte_array_buffer.extend(data[start_char_index + 1:])
         else:
             # Guess this wasn't for us
             return
@@ -138,43 +141,49 @@ async def uart_terminal():
     def handle_rx(_: BleakGATTCharacteristic, data: bytearray):
         process_byte_packet(data)
 
-
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
         await client.start_notify(UART_TX_CHAR_UUID, handle_rx)
-
-        print("Connected, start typing and press ENTER...")
-
+        print("Connected")
         loop = asyncio.get_running_loop()
-        nus = client.services.get_service(UART_SERVICE_UUID)
-        rx_char = nus.get_characteristic(UART_RX_CHAR_UUID)
 
         while True:
-            # This waits until you type a line and press ENTER.
-            # A real terminal program might put stdin in raw mode so that things
-            # like CTRL+C get passed to the remote device.
-            data = await loop.run_in_executor(None, sys.stdin.buffer.readline)
+            await asyncio.sleep(0.1)
+            # await loop.run_in_executor(None, plot(line1, figure))# sys.stdin.buffer.readline)
 
-            # data will be empty on EOF (e.g. CTRL+D on *nix)
-            if not data:
-                break
 
-            # some devices, like devices running MicroPython, expect Windows
-            # line endings (uncomment line below if needed)
-            # data = data.replace(b"\n", b"\r\n")
+async def plot():
+    plt.ion()
+    figure, axes = plt.subplots()
+    axes.set_xlabel("Tiempo [ms]")
+    axes.set_ylabel("Temp. [mC]")
+    axes.grid()
+    line1, = axes.plot(*zip(*tace_deque))
+    line1.set_label("Temp Ace.")
+    line2, = axes.plot(*zip(*tadm_deque))
+    line2.set_label("Temp Adm.")
+    # line3, = axes.plot(*zip(*tesc_deque), label="Temp Esc.")
+    axes.legend()
+    while True:
+        line1.set_data(*zip(*tace_deque))
+        line2.set_data(*zip(*tadm_deque))
+        # line3.set_data(*zip(*tesc_deque))
+        axes.relim()
+        axes.autoscale_view()
+        figure.canvas.flush_events()
+        await asyncio.sleep(1)
 
-            # Writing without response requires that the data can fit in a
-            # single BLE packet. We can use the max_write_without_response_size
-            # property to split the data into chunks that will fit.
 
-            for s in sliced(data, rx_char.max_write_without_response_size):
-                await client.write_gatt_char(rx_char, s)
-
-            print("sent:", data)
+async def main():
+    t1 = loop.create_task(uart_terminal())
+    t2 = loop.create_task(plot())
+    await t1, t2
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(uart_terminal())
+        # asyncio.run(uart_terminal())
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(main())
     except asyncio.CancelledError:
         # task is cancelled on disconnect, so we ignore this error
         pass
