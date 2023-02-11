@@ -41,9 +41,9 @@ MIDDLE_MESSAGE = 2
 FOUND_END = 3
 process_byte_packet_state = 0
 
-tace_deque = deque([(0, 0)], maxlen=20)
-tadm_deque = deque([(0, 0)], maxlen=20)
-tesc_deque = deque([(0, 0)], maxlen=20)
+tace_deque = deque([(0, 0)], maxlen=30)
+tadm_deque = deque([(0, 0)], maxlen=30)
+tesc_deque = deque([(0, 0)], maxlen=30)
 
 TACE_LABEL = "Tace"
 TADM_LABEL = "Tadm"
@@ -51,7 +51,6 @@ TESC_LABEL = "Tesc"
 
 
 def append_packet_to_deque(data: bytearray):
-    print(data)
     splitted = data.split(GROUP_SEPARATOR_CHAR)
     time = int(splitted[0].decode('ascii'))
     value = int(splitted[2].decode('ascii'))
@@ -66,7 +65,6 @@ def append_packet_to_deque(data: bytearray):
 
 def process_byte_packet(data: bytearray):
     global process_byte_packet_state, byte_array_buffer
-
     if process_byte_packet_state == NOTHING_FOUND:
         # empty the buffer
         byte_array_buffer = bytearray(b'')
@@ -79,25 +77,35 @@ def process_byte_packet(data: bytearray):
                 return
             else:
                 process_byte_packet_state = FOUND_START
-                byte_array_buffer.extend(data[start_char_index + 1:])
+                byte_array_buffer.extend(data[start_char_index+1:])
         else:
             # Guess this wasn't for us
             return
     elif process_byte_packet_state == FOUND_START:
         end_char_index = data.find(END_CHAR)
+        start_char_index = data.find(START_CHAR)
         if end_char_index != -1:
-            process_byte_packet_state = NOTHING_FOUND
             byte_array_buffer.extend(data[:end_char_index])
             append_packet_to_deque(byte_array_buffer)
+            if start_char_index != -1:
+                process_byte_packet_state = FOUND_START
+                byte_array_buffer = data[start_char_index+1:]
+            else:
+                process_byte_packet_state = NOTHING_FOUND
         else:
             process_byte_packet_state = MIDDLE_MESSAGE
             byte_array_buffer.extend(data)
     elif process_byte_packet_state == MIDDLE_MESSAGE:
         end_char_index = data.find(END_CHAR)
+        start_char_index = data.find(START_CHAR)
         if end_char_index != -1:
-            process_byte_packet_state = NOTHING_FOUND
             byte_array_buffer.extend(data[:end_char_index])
             append_packet_to_deque(byte_array_buffer)
+            if start_char_index != -1:
+                process_byte_packet_state = FOUND_START
+                byte_array_buffer = data[start_char_index+1:]
+            else:
+                process_byte_packet_state = NOTHING_FOUND
         else:
             byte_array_buffer.extend(data)
 
@@ -138,8 +146,8 @@ async def uart_terminal():
         loop = asyncio.get_running_loop()
 
         while True:
-            await asyncio.sleep(0.1)
-            # await loop.run_in_executor(None, plot(line1, figure))# sys.stdin.buffer.readline)
+            #await asyncio.sleep(0.001)
+            await loop.run_in_executor(None, sys.stdin.buffer.readline)
 
 
 async def plot():
@@ -152,12 +160,12 @@ async def plot():
     line1.set_label("Temp Ace.")
     line2, = axes.plot(*zip(*tadm_deque))
     line2.set_label("Temp Adm.")
-    # line3, = axes.plot(*zip(*tesc_deque), label="Temp Esc.")
+    line3, = axes.plot(*zip(*tesc_deque), label="Temp Esc.")
     axes.legend()
     while True:
         line1.set_data(*zip(*tace_deque))
         line2.set_data(*zip(*tadm_deque))
-        # line3.set_data(*zip(*tesc_deque))
+        line3.set_data(*zip(*tesc_deque))
         axes.relim()
         axes.autoscale_view()
         figure.canvas.flush_events()
