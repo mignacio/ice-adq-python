@@ -50,6 +50,12 @@ TADM_LABEL = "Tadm"
 TESC_LABEL = "Tesc"
 
 
+def find_start_and_end_chars(data: bytearray):
+    start_char_index = data.find(START_CHAR)
+    end_char_index = data.find(END_CHAR)
+    return [start_char_index, end_char_index]
+
+
 def append_packet_to_deque(data: bytearray):
     splitted = data.split(GROUP_SEPARATOR_CHAR)
     time = int(splitted[0].decode('ascii'))
@@ -68,8 +74,7 @@ def process_byte_packet(data: bytearray):
     if process_byte_packet_state == NOTHING_FOUND:
         # empty the buffer
         byte_array_buffer = bytearray(b'')
-        start_char_index = data.find(START_CHAR)
-        end_char_index = data.find(END_CHAR)
+        start_char_index, end_char_index = find_start_and_end_chars(data)
         if start_char_index != -1:
             if start_char_index < end_char_index:
                 # We found a start and end in same packet. Just print it.
@@ -77,33 +82,31 @@ def process_byte_packet(data: bytearray):
                 return
             else:
                 process_byte_packet_state = FOUND_START
-                byte_array_buffer.extend(data[start_char_index+1:])
+                byte_array_buffer.extend(data[start_char_index + 1:])
         else:
             # Guess this wasn't for us
             return
     elif process_byte_packet_state == FOUND_START:
-        end_char_index = data.find(END_CHAR)
-        start_char_index = data.find(START_CHAR)
+        start_char_index, end_char_index = find_start_and_end_chars(data)
         if end_char_index != -1:
             byte_array_buffer.extend(data[:end_char_index])
             append_packet_to_deque(byte_array_buffer)
             if start_char_index != -1:
                 process_byte_packet_state = FOUND_START
-                byte_array_buffer = data[start_char_index+1:]
+                byte_array_buffer = data[start_char_index + 1:]
             else:
                 process_byte_packet_state = NOTHING_FOUND
         else:
             process_byte_packet_state = MIDDLE_MESSAGE
             byte_array_buffer.extend(data)
     elif process_byte_packet_state == MIDDLE_MESSAGE:
-        end_char_index = data.find(END_CHAR)
-        start_char_index = data.find(START_CHAR)
+        start_char_index, end_char_index = find_start_and_end_chars(data)
         if end_char_index != -1:
             byte_array_buffer.extend(data[:end_char_index])
             append_packet_to_deque(byte_array_buffer)
             if start_char_index != -1:
                 process_byte_packet_state = FOUND_START
-                byte_array_buffer = data[start_char_index+1:]
+                byte_array_buffer = data[start_char_index + 1:]
             else:
                 process_byte_packet_state = NOTHING_FOUND
         else:
@@ -146,7 +149,7 @@ async def uart_terminal():
         loop = asyncio.get_running_loop()
 
         while True:
-            #await asyncio.sleep(0.001)
+            # await asyncio.sleep(0.001)
             await loop.run_in_executor(None, sys.stdin.buffer.readline)
 
 
@@ -180,7 +183,6 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        # asyncio.run(uart_terminal())
         loop = asyncio.new_event_loop()
         loop.run_until_complete(main())
     except asyncio.CancelledError:
