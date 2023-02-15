@@ -1,26 +1,11 @@
-"""
-UART Service
--------------
-An example showing how to write a simple program using the Nordic Semiconductor
-(nRF) UART service.
-"""
-
-# import kivy
 import asyncio
-import matplotlib.lines as Line2D
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import sys
-import json
-from itertools import count, takewhile
-from typing import Iterator
-
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from collections import deque
-from matplotlib import style
+import matplotlib.pyplot as plt
+import sys
 
 UART_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 UART_RX_CHAR_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
@@ -28,8 +13,6 @@ UART_TX_CHAR_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
 START_CHAR = bytes.fromhex("02")
 END_CHAR = bytes.fromhex("03")
 GROUP_SEPARATOR_CHAR = bytes.fromhex("1D")
-
-# kivy.require('1.9.0')
 
 FoundStart = False
 FoundEnd = False
@@ -44,10 +27,16 @@ process_byte_packet_state = 0
 tace_deque = deque([(0, 0)], maxlen=30)
 tadm_deque = deque([(0, 0)], maxlen=30)
 tesc_deque = deque([(0, 0)], maxlen=30)
+vbat_deque = deque([(0, 0)], maxlen=30)
+o2_deque = deque([(0, 0)], maxlen=30)
+pace_deque = deque([(0, 0)], maxlen=30)
 
 TACE_LABEL = "Tace"
 TADM_LABEL = "Tadm"
 TESC_LABEL = "Tesc"
+VBAT_LABEL = "Vbat"
+O2_LABEL = "_O2_"
+PACE_LABEL = "Pace"
 
 
 def find_start_and_end_chars(data: bytearray):
@@ -61,12 +50,20 @@ def append_packet_to_deque(data: bytearray):
     time = int(splitted[0].decode('ascii'))
     value = int(splitted[2].decode('ascii'))
     label = splitted[1].decode('ascii')
+
     if label == TACE_LABEL:
         tace_deque.append((time, value))
     elif label == TADM_LABEL:
         tadm_deque.append((time, value))
     elif label == TESC_LABEL:
         tesc_deque.append((time, value))
+    elif label == VBAT_LABEL:
+        vbat_deque.append((time, value))
+    elif label == O2_LABEL:
+        o2_deque.append((time,value))
+    elif label == PACE_LABEL:
+        pace_deque.append((time,value))
+
 
 
 def process_byte_packet(data: bytearray):
@@ -155,22 +152,39 @@ async def uart_terminal():
 
 async def plot():
     plt.ion()
-    figure, axes = plt.subplots()
-    axes.set_xlabel("Tiempo [ms]")
-    axes.set_ylabel("Temp. [mC]")
-    axes.grid()
-    line1, = axes.plot(*zip(*tace_deque))
-    line1.set_label("Temp Ace.")
-    line2, = axes.plot(*zip(*tadm_deque))
-    line2.set_label("Temp Adm.")
-    line3, = axes.plot(*zip(*tesc_deque), label="Temp Esc.")
-    axes.legend()
+    figure, axes = plt.subplots(2,1)
+    axes[0].set_xlabel("Tiempo [ms]")
+    axes[0].set_ylabel("Temp. [mC]")
+    axes[0].grid()
+
+    axes[1].set_xlabel("Tiempo [ms]")
+    axes[1].set_ylabel("Tension [mV]")
+    axes[1].grid()
+
+    tace_line, = axes[0].plot(*zip(*tace_deque), label="Temp. Ace.")
+    tadm_line, = axes[0].plot(*zip(*tadm_deque), label="Temp. Adm.")
+    tesc_line, = axes[0].plot(*zip(*tesc_deque), label="Temp. Esc.")
+    axes[0].legend()
+
+    vbat_line, = axes[1].plot(*zip(*vbat_deque), label="Vbat.")
+    o2_line, = axes[1].plot(*(zip(*o2_deque)), label="O2.")
+    pace_line, = axes[1].plot(*zip(*pace_deque), label="Pace.")
+    axes[1].legend()
+
     while True:
-        line1.set_data(*zip(*tace_deque))
-        line2.set_data(*zip(*tadm_deque))
-        line3.set_data(*zip(*tesc_deque))
-        axes.relim()
-        axes.autoscale_view()
+        tace_line.set_data(*zip(*tace_deque))
+        tadm_line.set_data(*zip(*tadm_deque))
+        tesc_line.set_data(*zip(*tesc_deque))
+
+        vbat_line.set_data(*zip(*vbat_deque))
+        o2_line.set_data(*zip(*o2_deque))
+        pace_line.set_data(*zip(*pace_deque))
+
+        axes[0].relim()
+        axes[0].autoscale_view()
+
+        axes[1].relim()
+        axes[1].autoscale_view()
         figure.canvas.flush_events()
         await asyncio.sleep(1)
 
