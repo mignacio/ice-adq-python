@@ -1,4 +1,5 @@
 import asyncio
+from BlitManager import BlitManager
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -152,40 +153,56 @@ async def uart_terminal():
 
 async def plot():
     plt.ion()
-    figure, axes = plt.subplots(2,1)
+    figure, axes = plt.subplots(3,1)
+    axes[0].set_title("Temperatura vs Tiempo")
     axes[0].set_xlabel("Tiempo [ms]")
     axes[0].set_ylabel("Temp. [mC]")
     axes[0].grid()
 
+    axes[1].set_title("Tension vs tiempo")
     axes[1].set_xlabel("Tiempo [ms]")
     axes[1].set_ylabel("Tension [mV]")
     axes[1].grid()
+
+    axes[2].set_title("Tension Bateria vs tiempo")
+    axes[2].set_xlabel("Tiempo [ms]")
+    axes[2].set_ylabel("Tension [mV]")
+    axes[2].grid()
 
     tace_line, = axes[0].plot(*zip(*tace_deque), label="Temp. Ace.")
     tadm_line, = axes[0].plot(*zip(*tadm_deque), label="Temp. Adm.")
     tesc_line, = axes[0].plot(*zip(*tesc_deque), label="Temp. Esc.")
     axes[0].legend()
 
-    vbat_line, = axes[1].plot(*zip(*vbat_deque), label="Vbat.")
     o2_line, = axes[1].plot(*(zip(*o2_deque)), label="O2.")
     pace_line, = axes[1].plot(*zip(*pace_deque), label="Pace.")
     axes[1].legend()
+
+    vbat_line, = axes[2].plot(*zip(*vbat_deque), label="Vbat.")
+    axes[2].legend()
+
+    blitManager = BlitManager(figure.canvas, axes)
 
     while True:
         tace_line.set_data(*zip(*tace_deque))
         tadm_line.set_data(*zip(*tadm_deque))
         tesc_line.set_data(*zip(*tesc_deque))
 
-        vbat_line.set_data(*zip(*vbat_deque))
         o2_line.set_data(*zip(*o2_deque))
         pace_line.set_data(*zip(*pace_deque))
+
+        vbat_line.set_data(*zip(*vbat_deque))
 
         axes[0].relim()
         axes[0].autoscale_view()
 
         axes[1].relim()
         axes[1].autoscale_view()
-        figure.canvas.flush_events()
+
+        axes[2].relim()
+        axes[2].autoscale_view()
+
+        blitManager.update()
         await asyncio.sleep(1)
 
 
