@@ -25,12 +25,12 @@ MIDDLE_MESSAGE = 2
 FOUND_END = 3
 process_byte_packet_state = 0
 
-tace_deque = deque([(0, 0)], maxlen=30)
-tadm_deque = deque([(0, 0)], maxlen=30)
-tesc_deque = deque([(0, 0)], maxlen=30)
-vbat_deque = deque([(0, 0)], maxlen=30)
-o2_deque = deque([(0, 0)], maxlen=30)
-pace_deque = deque([(0, 0)], maxlen=30)
+tace_deque = deque([(0, 0)], maxlen=24)
+tadm_deque = deque([(0, 0)], maxlen=24)
+tesc_deque = deque([(0, 0)], maxlen=24)
+vbat_deque = deque([(0, 0)], maxlen=60)
+o2_deque = deque([(0, 0)], maxlen=60)
+pace_deque = deque([(0, 0)], maxlen=60)
 
 TACE_LABEL = "Tace"
 TADM_LABEL = "Tadm"
@@ -173,13 +173,16 @@ async def plot():
     tadm_line, = axes[0].plot(*zip(*tadm_deque), label="Temp. Adm.")
     tesc_line, = axes[0].plot(*zip(*tesc_deque), label="Temp. Esc.")
     axes[0].legend()
+    axes[0].set_ylim(0, 40000)
 
     o2_line, = axes[1].plot(*(zip(*o2_deque)), label="O2.")
     pace_line, = axes[1].plot(*zip(*pace_deque), label="Pace.")
     axes[1].legend()
+    axes[1].set_xlim(0, 3300)
 
     vbat_line, = axes[2].plot(*zip(*vbat_deque), label="Vbat.")
     axes[2].legend()
+    axes[2].set_ylim(0, 16102)
 
     blitManager = BlitManager(figure.canvas, axes)
 
@@ -193,13 +196,19 @@ async def plot():
 
         vbat_line.set_data(*zip(*vbat_deque))
 
-        axes[0].relim()
+        xlim_high = tace_deque[-1][0]
+        xlim_low = xlim_high - 60000 #120 seconds
+        axes[0].set_xlim(xlim_low, xlim_high)
         axes[0].autoscale_view()
 
-        axes[1].relim()
+        xlim_high = o2_deque[-1][0]
+        xlim_low = xlim_high - 60000 #120 seconds
+        axes[1].set_xlim(xlim_low, xlim_high)
         axes[1].autoscale_view()
 
-        axes[2].relim()
+        xlim_high = vbat_deque[-1][0]
+        xlim_low = xlim_high - 60000 #120 seconds
+        axes[2].set_xlim(xlim_low, xlim_high)
         axes[2].autoscale_view()
 
         blitManager.update()
