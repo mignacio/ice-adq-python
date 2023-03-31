@@ -178,7 +178,7 @@ async def plot():
     o2_line, = axes[1].plot(*(zip(*o2_deque)), label="O2.")
     pace_line, = axes[1].plot(*zip(*pace_deque), label="Pace.")
     axes[1].legend()
-    axes[1].set_xlim(0, 3300)
+    axes[1].set_ylim(0, 3300)
 
     vbat_line, = axes[2].plot(*zip(*vbat_deque), label="Vbat.")
     axes[2].legend()
