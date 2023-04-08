@@ -1,4 +1,6 @@
 import asyncio
+import datetime
+import string
 from BlitManager import BlitManager
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -46,28 +48,40 @@ def find_start_and_end_chars(data: bytearray):
     return [start_char_index, end_char_index]
 
 
-def append_packet_to_deque(data: bytearray):
+def append_packet_to_deque(data: bytearray, jsonfile: string):
     splitted = data.split(GROUP_SEPARATOR_CHAR)
     time = int(splitted[0].decode('ascii'))
-    value = int(splitted[2].decode('ascii'))
     label = splitted[1].decode('ascii')
+    value = int(splitted[2].decode('ascii'))
+    error = splitted[3].decode('ascii')
 
     if label == TACE_LABEL:
         tace_deque.append((time, value))
+        with open( TACE_LABEL + jsonfile, 'a') as file:
+            file.write(f"{time}, {value}, {error}\n")
     elif label == TADM_LABEL:
         tadm_deque.append((time, value))
+        with open( TADM_LABEL + jsonfile, 'a') as file:
+            file.write(f"{time}, {value}, {error}\n")
     elif label == TESC_LABEL:
         tesc_deque.append((time, value))
+        with open( TESC_LABEL + jsonfile, 'a') as file:
+            file.write(f"{time}, {value}, {error}\n")
     elif label == VBAT_LABEL:
         vbat_deque.append((time, value))
+        with open( VBAT_LABEL + jsonfile, 'a') as file:
+            file.write(f"{time}, {value}, {error}\n")
     elif label == O2_LABEL:
         o2_deque.append((time,value))
+        with open( O2_LABEL + jsonfile, 'a') as file:
+            file.write(f"{time}, {value}, {error}\n")
     elif label == PACE_LABEL:
         pace_deque.append((time,value))
+        with open( PACE_LABEL + jsonfile, 'a') as file:
+            file.write(f"{time}, {value}, {error}\n")
 
 
-
-def process_byte_packet(data: bytearray):
+def process_byte_packet(data: bytearray, jsonfile):
     global process_byte_packet_state, byte_array_buffer
     if process_byte_packet_state == NOTHING_FOUND:
         # empty the buffer
@@ -76,7 +90,7 @@ def process_byte_packet(data: bytearray):
         if start_char_index != -1:
             if start_char_index < end_char_index:
                 # We found a start and end in same packet. Just print it.
-                append_packet_to_deque(data[start_char_index + 1:end_char_index])
+                append_packet_to_deque(data[start_char_index + 1:end_char_index], jsonfile)
                 return
             else:
                 process_byte_packet_state = FOUND_START
@@ -88,7 +102,7 @@ def process_byte_packet(data: bytearray):
         start_char_index, end_char_index = find_start_and_end_chars(data)
         if end_char_index != -1:
             byte_array_buffer.extend(data[:end_char_index])
-            append_packet_to_deque(byte_array_buffer)
+            append_packet_to_deque(byte_array_buffer, jsonfile)
             if start_char_index != -1:
                 process_byte_packet_state = FOUND_START
                 byte_array_buffer = data[start_char_index + 1:]
@@ -101,7 +115,7 @@ def process_byte_packet(data: bytearray):
         start_char_index, end_char_index = find_start_and_end_chars(data)
         if end_char_index != -1:
             byte_array_buffer.extend(data[:end_char_index])
-            append_packet_to_deque(byte_array_buffer)
+            append_packet_to_deque(byte_array_buffer, jsonfile)
             if start_char_index != -1:
                 process_byte_packet_state = FOUND_START
                 byte_array_buffer = data[start_char_index + 1:]
@@ -116,6 +130,8 @@ async def uart_terminal():
     (nRF) UART service. It reads from stdin and sends each line of data to the
     remote device. Any data received from the device is printed to stdout.
     """
+    now = datetime.datetime.now()
+    filename = f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 
     def match_nus_uuid(device: BLEDevice, adv: AdvertisementData):
         # This assumes that the device includes the UART service UUID in the
@@ -139,7 +155,7 @@ async def uart_terminal():
             task.cancel()
 
     def handle_rx(_: BleakGATTCharacteristic, data: bytearray):
-        process_byte_packet(data)
+        process_byte_packet(data, filename)
 
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
         await client.start_notify(UART_TX_CHAR_UUID, handle_rx)
