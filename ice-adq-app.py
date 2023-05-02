@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from dataclasses import dataclass, field
 import string
 from BlitManager import BlitManager
 from bleak import BleakClient, BleakScanner
@@ -27,13 +28,6 @@ MIDDLE_MESSAGE = 2
 FOUND_END = 3
 process_byte_packet_state = 0
 
-tace_deque = deque([(0, 0)], maxlen=24)
-tadm_deque = deque([(0, 0)], maxlen=24)
-tesc_deque = deque([(0, 0)], maxlen=24)
-vbat_deque = deque([(0, 0)], maxlen=60)
-o2_deque = deque([(0, 0)], maxlen=60)
-pace_deque = deque([(0, 0)], maxlen=60)
-
 TACE_LABEL = "Tace"
 TADM_LABEL = "Tadm"
 TESC_LABEL = "Tesc"
@@ -41,6 +35,21 @@ VBAT_LABEL = "Vbat"
 O2_LABEL = "_O2_"
 PACE_LABEL = "Pace"
 
+@dataclass
+class ICEMeasurement:
+    label: str
+    data: deque
+    file: str
+
+now = datetime.datetime.now()
+filename = f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+
+tace = ICEMeasurement('Tace', deque([(0, 0)], maxlen=24), f"Tace-{filename}.csv")
+tadm = ICEMeasurement('Tadm', deque([(0, 0)], maxlen=24), f"Tadm-{filename}.csv")
+tesc = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=24), f"Tesc-{filename}.csv")
+vbat = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=24), f"Vbat-{filename}.csv")
+o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=24), f"O2-{filename}.csv")
+pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=24), f"Pace-{filename}.csv")
 
 def find_start_and_end_chars(data: bytearray):
     start_char_index = data.find(START_CHAR)
@@ -48,7 +57,7 @@ def find_start_and_end_chars(data: bytearray):
     return [start_char_index, end_char_index]
 
 
-def append_packet_to_deque(data: bytearray, jsonfile: string):
+def append_packet_to_deque(data: bytearray):
     splitted = data.split(GROUP_SEPARATOR_CHAR)
     time = int(splitted[0].decode('ascii'))
     label = splitted[1].decode('ascii')
@@ -56,32 +65,32 @@ def append_packet_to_deque(data: bytearray, jsonfile: string):
     error = splitted[3].decode('ascii')
 
     if label == TACE_LABEL:
-        tace_deque.append((time, value))
-        with open( TACE_LABEL + jsonfile, 'a') as file:
+        tace.data.append((time, value))
+        with open( tace.file, 'a') as file:
             file.write(f"{time}, {value}, {error}\n")
     elif label == TADM_LABEL:
-        tadm_deque.append((time, value))
-        with open( TADM_LABEL + jsonfile, 'a') as file:
+        tadm.data.append((time, value))
+        with open( tadm.file, 'a') as file:
             file.write(f"{time}, {value}, {error}\n")
     elif label == TESC_LABEL:
-        tesc_deque.append((time, value))
-        with open( TESC_LABEL + jsonfile, 'a') as file:
+        tesc.data.append((time, value))
+        with open( tesc.file, 'a') as file:
             file.write(f"{time}, {value}, {error}\n")
     elif label == VBAT_LABEL:
-        vbat_deque.append((time, value))
-        with open( VBAT_LABEL + jsonfile, 'a') as file:
+        vbat.data.append((time, value))
+        with open( vbat.file, 'a') as file:
             file.write(f"{time}, {value}, {error}\n")
     elif label == O2_LABEL:
-        o2_deque.append((time,value))
-        with open( O2_LABEL + jsonfile, 'a') as file:
+        o2.data.append((time,value))
+        with open( o2.file, 'a') as file:
             file.write(f"{time}, {value}, {error}\n")
     elif label == PACE_LABEL:
-        pace_deque.append((time,value))
-        with open( PACE_LABEL + jsonfile, 'a') as file:
+        pace.data.append((time,value))
+        with open( pace.file, 'a') as file:
             file.write(f"{time}, {value}, {error}\n")
 
 
-def process_byte_packet(data: bytearray, jsonfile):
+def process_byte_packet(data: bytearray):
     global process_byte_packet_state, byte_array_buffer
     if process_byte_packet_state == NOTHING_FOUND:
         # empty the buffer
@@ -90,7 +99,7 @@ def process_byte_packet(data: bytearray, jsonfile):
         if start_char_index != -1:
             if start_char_index < end_char_index:
                 # We found a start and end in same packet. Just print it.
-                append_packet_to_deque(data[start_char_index + 1:end_char_index], jsonfile)
+                append_packet_to_deque(data[start_char_index + 1:end_char_index])
                 return
             else:
                 process_byte_packet_state = FOUND_START
@@ -102,7 +111,7 @@ def process_byte_packet(data: bytearray, jsonfile):
         start_char_index, end_char_index = find_start_and_end_chars(data)
         if end_char_index != -1:
             byte_array_buffer.extend(data[:end_char_index])
-            append_packet_to_deque(byte_array_buffer, jsonfile)
+            append_packet_to_deque(byte_array_buffer)
             if start_char_index != -1:
                 process_byte_packet_state = FOUND_START
                 byte_array_buffer = data[start_char_index + 1:]
@@ -115,7 +124,7 @@ def process_byte_packet(data: bytearray, jsonfile):
         start_char_index, end_char_index = find_start_and_end_chars(data)
         if end_char_index != -1:
             byte_array_buffer.extend(data[:end_char_index])
-            append_packet_to_deque(byte_array_buffer, jsonfile)
+            append_packet_to_deque(byte_array_buffer)
             if start_char_index != -1:
                 process_byte_packet_state = FOUND_START
                 byte_array_buffer = data[start_char_index + 1:]
@@ -123,7 +132,6 @@ def process_byte_packet(data: bytearray, jsonfile):
                 process_byte_packet_state = NOTHING_FOUND
         else:
             byte_array_buffer.extend(data)
-
 
 async def uart_terminal():
     """This is a simple "terminal" program that uses the Nordic Semiconductor
@@ -155,7 +163,7 @@ async def uart_terminal():
             task.cancel()
 
     def handle_rx(_: BleakGATTCharacteristic, data: bytearray):
-        process_byte_packet(data, filename)
+        process_byte_packet(data)
 
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
         await client.start_notify(UART_TX_CHAR_UUID, handle_rx)
@@ -169,7 +177,7 @@ async def uart_terminal():
 
 async def plot():
     plt.ion()
-    figure, axes = plt.subplots(3,1)
+    figure, axes = plt.subplots(4,1)
     axes[0].set_title("Temperatura vs Tiempo")
     axes[0].set_xlabel("Tiempo [ms]")
     axes[0].set_ylabel("Temp. [mC]")
@@ -185,47 +193,62 @@ async def plot():
     axes[2].set_ylabel("Tension [mV]")
     axes[2].grid()
 
-    tace_line, = axes[0].plot(*zip(*tace_deque), label="Temp. Ace.")
-    tadm_line, = axes[0].plot(*zip(*tadm_deque), label="Temp. Adm.")
-    tesc_line, = axes[0].plot(*zip(*tesc_deque), label="Temp. Esc.")
+    tadm_line, = axes[0].plot(*zip(*tadm.data), label="Temp. Adm.")
+    tesc_line, = axes[0].plot(*zip(*tesc.data), label="Temp. Esc.")
     axes[0].legend()
     axes[0].set_ylim(0, 40000)
 
-    o2_line, = axes[1].plot(*(zip(*o2_deque)), label="O2.")
-    pace_line, = axes[1].plot(*zip(*pace_deque), label="Pace.")
+    o2_line, = axes[1].plot(*(zip(*o2.data)), label="O2.")
     axes[1].legend()
     axes[1].set_ylim(0, 3300)
 
-    vbat_line, = axes[2].plot(*zip(*vbat_deque), label="Vbat.")
+    vbat_line, = axes[2].plot(*zip(*vbat.data), label="Vbat.")
     axes[2].legend()
     axes[2].set_ylim(0, 16102)
+
+    pace_line, = axes[3].plot(*zip(*pace.data), label="Pace.")
+    axes[3].legend()
+    axes[3].set_ylim(0, 40000)
+
+    axes3_2 = axes[3].twinx()
+    tace_line, = axes3_2.plot(*zip(*tace.data), label="Temp. Ace.")
+    axes3_2 = axes3_2.legend()
+    #axes3_2 = axes3_2.set_ylim(0, 120)
 
     blitManager = BlitManager(figure.canvas, axes)
 
     while True:
-        tace_line.set_data(*zip(*tace_deque))
-        tadm_line.set_data(*zip(*tadm_deque))
-        tesc_line.set_data(*zip(*tesc_deque))
+        tace_line.set_data(*zip(*tace.data))
+        tadm_line.set_data(*zip(*tadm.data))
+        tesc_line.set_data(*zip(*tesc.data))
 
-        o2_line.set_data(*zip(*o2_deque))
-        pace_line.set_data(*zip(*pace_deque))
+        o2_line.set_data(*zip(*o2.data))
+        pace_line.set_data(*zip(*pace.data))
 
-        vbat_line.set_data(*zip(*vbat_deque))
+        vbat_line.set_data(*zip(*vbat.data))
 
-        xlim_high = tace_deque[-1][0]
+        xlim_high = tesc.data[-1][0]
         xlim_low = xlim_high - 60000 #120 seconds
         axes[0].set_xlim(xlim_low, xlim_high)
         axes[0].autoscale_view()
 
-        xlim_high = o2_deque[-1][0]
+        xlim_high = o2.data[-1][0]
         xlim_low = xlim_high - 60000 #120 seconds
         axes[1].set_xlim(xlim_low, xlim_high)
         axes[1].autoscale_view()
 
-        xlim_high = vbat_deque[-1][0]
+        xlim_high = vbat.data[-1][0]
         xlim_low = xlim_high - 60000 #120 seconds
         axes[2].set_xlim(xlim_low, xlim_high)
         axes[2].autoscale_view()
+
+        xlim_high = tace.data[-1][0]
+        xlim_low = xlim_high - 60000
+        axes[3].set_xlim(xlim_low, xlim_high)
+        axes[3].autoscale_view
+
+        #axes3_2.set_xlim(xlim_low, xlim_high)
+        #axes3_2.autoscale_view
 
         blitManager.update()
         await asyncio.sleep(1)
