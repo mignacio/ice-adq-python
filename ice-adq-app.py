@@ -28,13 +28,6 @@ MIDDLE_MESSAGE = 2
 FOUND_END = 3
 process_byte_packet_state = 0
 
-TACE_LABEL = "Tace"
-TADM_LABEL = "Tadm"
-TESC_LABEL = "Tesc"
-VBAT_LABEL = "Vbat"
-O2_LABEL = "_O2_"
-PACE_LABEL = "Pace"
-
 @dataclass
 class ICEMeasurement:
     label: str
@@ -51,6 +44,8 @@ vbat = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=24), f"Vbat-{filename}.csv"
 o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=24), f"O2-{filename}.csv")
 pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=24), f"Pace-{filename}.csv")
 
+measurements = [tace, tadm, tesc, vbat, o2, pace]
+
 def find_start_and_end_chars(data: bytearray):
     start_char_index = data.find(START_CHAR)
     end_char_index = data.find(END_CHAR)
@@ -64,30 +59,11 @@ def append_packet_to_deque(data: bytearray):
     value = int(splitted[2].decode('ascii'))
     error = splitted[3].decode('ascii')
 
-    if label == TACE_LABEL:
-        tace.data.append((time, value))
-        with open( tace.file, 'a') as file:
-            file.write(f"{time}, {value}, {error}\n")
-    elif label == TADM_LABEL:
-        tadm.data.append((time, value))
-        with open( tadm.file, 'a') as file:
-            file.write(f"{time}, {value}, {error}\n")
-    elif label == TESC_LABEL:
-        tesc.data.append((time, value))
-        with open( tesc.file, 'a') as file:
-            file.write(f"{time}, {value}, {error}\n")
-    elif label == VBAT_LABEL:
-        vbat.data.append((time, value))
-        with open( vbat.file, 'a') as file:
-            file.write(f"{time}, {value}, {error}\n")
-    elif label == O2_LABEL:
-        o2.data.append((time,value))
-        with open( o2.file, 'a') as file:
-            file.write(f"{time}, {value}, {error}\n")
-    elif label == PACE_LABEL:
-        pace.data.append((time,value))
-        with open( pace.file, 'a') as file:
-            file.write(f"{time}, {value}, {error}\n")
+    for measure in measurements:
+        if label == measure.label:
+            measure.data.append((time,value))
+            with open(measure.file, 'a') as file:
+                file.write(f"{time}, {value}, {error}\n")
 
 
 def process_byte_packet(data: bytearray):
