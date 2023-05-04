@@ -46,12 +46,6 @@ pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=24), f"Pace-{filename}.csv"
 
 measurements = [tace, tadm, tesc, vbat, o2, pace]
 
-def find_start_and_end_chars(data: bytearray):
-    start_char_index = data.find(START_CHAR)
-    end_char_index = data.find(END_CHAR)
-    return [start_char_index, end_char_index]
-
-
 def append_packet_to_deque(data: bytearray):
     splitted = data.split(GROUP_SEPARATOR_CHAR)
     time = int(splitted[0].decode('ascii'))
@@ -64,6 +58,12 @@ def append_packet_to_deque(data: bytearray):
             measure.data.append((time,value))
             with open(measure.file, 'a') as file:
                 file.write(f"{time}, {value}, {error}\n")
+
+
+def find_start_and_end_chars(data: bytearray):
+    start_char_index = data.find(START_CHAR)
+    end_char_index = data.find(END_CHAR)
+    return [start_char_index, end_char_index]
 
 
 def process_byte_packet(data: bytearray):
@@ -184,7 +184,7 @@ async def plot():
 
     pace_line, = axes[3].plot(*zip(*pace.data), label="Pace.")
     axes[3].legend()
-    axes[3].set_ylim(0, 40000)
+    #axes[3].set_ylim(0, 40000)
 
     axes3_2 = axes[3].twinx()
     tace_line, = axes3_2.plot(*zip(*tace.data), label="Temp. Ace.")
@@ -221,7 +221,7 @@ async def plot():
         xlim_high = tace.data[-1][0]
         xlim_low = xlim_high - 60000
         axes[3].set_xlim(xlim_low, xlim_high)
-        axes[3].autoscale_view
+        #axes[3].autoscale_view
 
         #axes3_2.set_xlim(xlim_low, xlim_high)
         #axes3_2.autoscale_view
