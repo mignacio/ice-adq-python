@@ -1,7 +1,6 @@
 import asyncio
 import datetime
-from dataclasses import dataclass, field
-import string
+from dataclasses import dataclass
 from BlitManager import BlitManager
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -26,7 +25,6 @@ NOTHING_FOUND = 0
 FOUND_START = 1
 MIDDLE_MESSAGE = 2
 FOUND_END = 3
-process_byte_packet_state = 0
 
 @dataclass
 class ICEMeasurement:
@@ -65,6 +63,8 @@ def find_start_and_end_chars(data: bytearray):
     end_char_index = data.find(END_CHAR)
     return [start_char_index, end_char_index]
 
+
+process_byte_packet_state = 0
 
 def process_byte_packet(data: bytearray):
     global process_byte_packet_state, byte_array_buffer
@@ -110,12 +110,6 @@ def process_byte_packet(data: bytearray):
             byte_array_buffer.extend(data)
 
 async def uart_terminal():
-    """This is a simple "terminal" program that uses the Nordic Semiconductor
-    (nRF) UART service. It reads from stdin and sends each line of data to the
-    remote device. Any data received from the device is printed to stdout.
-    """
-    now = datetime.datetime.now()
-    filename = f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 
     def match_nus_uuid(device: BLEDevice, adv: AdvertisementData):
         # This assumes that the device includes the UART service UUID in the
