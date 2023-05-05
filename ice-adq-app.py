@@ -24,6 +24,7 @@ tesc = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=120), f"Tesc-{filename}.csv
 vbat = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=120), f"Vbat-{filename}.csv")
 o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv")
 pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv")
+rpm = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv")
 
 measurements = [tace, tadm, tesc, vbat, o2, pace]
 
@@ -53,25 +54,25 @@ class MainApp(App):
 
         tadm_line, = gas_v_t.plot(*zip(*tadm.data), label="Temp. Adm.")
         tesc_line, = gas_v_t.plot(*zip(*tesc.data), label="Temp. Esc.")
-        gas_v_t.legend()
+        gas_v_t.legend(loc='upper left')
         gas_v_t.set_ylim(0, 40000)
 
         o2_line, = vbat_v_t.plot(*(zip(*o2.data)), label="O2.")
-        vbat_v_t.legend()
+        vbat_v_t.legend(loc='upper left')
         vbat_v_t.set_ylim(0, 3300)
 
         vbat_line, = o2_v_t.plot(*zip(*vbat.data), label="Vbat.")
         o2_v_t.legend()
         o2_v_t.set_ylim(0, 16102)
 
-        pace_line, = ace_v_t.plot(*zip(*pace.data), label="Pace.")
-        ace_v_t.legend()
-        #axes[3].set_ylim(0, 40000)
+        tace_line, = ace_v_t.plot(*zip(*pace.data), label="Temp. Ace.")
+        ace_v_t.legend(loc='upper left')
+        ace_v_t.set_ylim(0, 40000)
+        ace_v_t.grid()
 
         axes3_2 = ace_v_t.twinx()
-        tace_line, = axes3_2.plot(*zip(*tace.data), label="Temp. Ace.")
-        axes3_2 = axes3_2.legend()
-        #axes3_2 = axes3_2.set_ylim(0, 120)
+        pace_line, = axes3_2.plot(*zip(*tace.data), label="Pres. Ace.")
+        axes3_2 = axes3_2.legend(loc='upper right')
 
         #blitManager = BlitManager(fig.canvas, axes)
 
@@ -122,7 +123,7 @@ class MainApp(App):
 
         self.fig, self.axes = plt.subplots(2,2)
         plt.ion()
-        self.canvas = FigureCanvasKivyAgg(self.fig, size_hint=(1, 0.95))
+        self.canvas = FigureCanvasKivyAgg(self.fig, size_hint=(1, 0.9))
         box.add_widget(self.canvas)
 
         try:
