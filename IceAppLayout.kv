@@ -1,4 +1,4 @@
-<ice-adq>
+<IceAppLayout>
 	BoxLayout:
 		id: box
 		size_hint_y: .8
@@ -12,4 +12,4 @@
 
 		Button:
 			text: "Connect"
-			on_release: root.save_it()
+			on_release: root.ble_connect_callback()
