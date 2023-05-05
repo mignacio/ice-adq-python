@@ -6,3 +6,4 @@ class ICEMeasurement:
     label: str
     data: deque
     file: str
+    visible: bool

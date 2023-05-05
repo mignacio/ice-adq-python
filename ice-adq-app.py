@@ -11,6 +11,7 @@ from BlitManager import BlitManager
 from kivy.lang import Builder
 from kivy.app import App
 from kivy.uix.button import Button
+from kivy.uix.checkbox import CheckBox
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
@@ -18,13 +19,13 @@ from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
 now = datetime.datetime.now()
 filename = f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 
-tace = ICEMeasurement('Tace', deque([(0, 0)], maxlen=120), f"Tace-{filename}.csv")
-tadm = ICEMeasurement('Tadm', deque([(0, 0)], maxlen=120), f"Tadm-{filename}.csv")
-tesc = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=120), f"Tesc-{filename}.csv")
-vbat = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=120), f"Vbat-{filename}.csv")
-o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv")
-pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv")
-rpm = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv")
+tace = ICEMeasurement('Tace', deque([(0, 0)], maxlen=120), f"Tace-{filename}.csv", True)
+tadm = ICEMeasurement('Tadm', deque([(0, 0)], maxlen=120), f"Tadm-{filename}.csv", True)
+tesc = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=120), f"Tesc-{filename}.csv", True)
+vbat = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=120), f"Vbat-{filename}.csv", True)
+o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", True)
+pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
+rpm = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
 
 measurements = [tace, tadm, tesc, vbat, o2, pace]
 
@@ -116,9 +117,31 @@ class MainApp(App):
     def build(self):
         box = BoxLayout( orientation = 'vertical', spacing=10)
 
-        self.connect_btn = Button
-        self.connect_btn = Button(text="Connect", size_hint=(1, 0.05))
+        self.connect_btn = Button(text="Connect", size_hint=(0.125, 0.05))
+
+        self.show_tadm_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
+        self.show_tadm_chk.bind(active=self.on_tadm_active)
+        self.show_tesc_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
+        self.show_tesc_chk.bind(active=self.on_tesc_active)
+        self.show_tace_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
+        self.show_tace_chk.bind(active=self.on_tace_active)
+        self.show_pace_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
+        self.show_pace_chk.bind(active=self.on_pace_active)
+        self.show_vbat_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
+        self.show_vbat_chk.bind(active=self.on_vbat_active)
+        self.show_o2_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
+        self.show_o2_chk.bind(active=self.on_o2_active)
+        self.show_rpm_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
+        self.show_rpm_chk.bind(active=self.on_rpm_active)
+
         box.add_widget(self.connect_btn)
+        box.add_widget(self.show_tadm_chk)
+        box.add_widget(self.show_tesc_chk)
+        box.add_widget(self.show_tace_chk)
+        box.add_widget(self.show_pace_chk)
+        box.add_widget(self.show_vbat_chk)
+        box.add_widget(self.show_o2_chk)
+        box.add_widget(self.show_rpm_chk)
         self.connect_btn.bind(on_press=self.ble_connect_callback)
 
         self.fig, self.axes = plt.subplots(2,2)
@@ -131,12 +154,34 @@ class MainApp(App):
         except asyncio.CancelledError:
             pass
         return box
-    
+
+
     def ble_connect_callback(self, instance):
         try:
             asyncio.create_task(uart_terminal(measurements))
         except asyncio.CancelledError:
             pass
+
+    def on_tadm_active():
+        tadm.visible = not tadm.visible
+
+    def on_tesc_active():
+        tesc.visible = not tesc.visible
+
+    def on_tace_active():
+        tace.visible = not tace.visible
+
+    def on_pace_active():
+        pace.visible = not pace.visible
+    
+    def on_vbat_active():
+        vbat.visible = not vbat.visible
+
+    def on_o2_active():
+        o2.visible = not o2.visible
+
+    def on_rpm_active():
+        rpm.visible = not rpm.visible
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
