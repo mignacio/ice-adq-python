@@ -14,7 +14,7 @@ from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.tabbedpanel import TabbedPanel
+from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
 
 now = datetime.datetime.now()
@@ -121,13 +121,16 @@ class MainApp(App):
             await asyncio.sleep(1)
 
     def build(self):
-        top_box = BoxLayout(orientation = 'vertical', spacing=10)
+        tabbed_panel = TabbedPanel(do_default_tab=False)
+        graficas_tab = TabbedPanelItem(text='Graficas')
+        config_tab = TabbedPanelItem(text='Config')
+        tabbed_panel.add_widget(graficas_tab)
+        tabbed_panel.add_widget(config_tab)
 
+        top_box = BoxLayout(orientation = 'vertical', spacing=10)
         box = BoxLayout( orientation = 'horizontal', spacing=8, size_hint=(1, 0.05))
-        top_box.add_widget(box)
 
         self.connect_btn = Button(text="Connect", size_hint=(0.125, 1))
-
         self.show_tadm_btn = Button(text="Tadm", size_hint=(0.125, 1))
         self.show_tadm_btn.bind(on_press=self.on_tadm_active)
         self.show_tesc_btn = Button(text="Tesc", size_hint=(0.125, 1))
@@ -154,7 +157,6 @@ class MainApp(App):
         self.connect_btn.bind(on_press=self.ble_connect_callback)
 
         box2 = BoxLayout(orientation = 'vertical', spacing=10, size_hint=(1, 0.95))
-        top_box.add_widget(box2)
         self.fig, self.axes = plt.subplots(2,2)
         plt.ion()
         self.canvas = FigureCanvasKivyAgg(self.fig, size_hint=(1, 0.95))
@@ -164,7 +166,11 @@ class MainApp(App):
             asyncio.create_task(self.plot())
         except asyncio.CancelledError:
             pass
-        return top_box
+
+        top_box.add_widget(box)
+        top_box.add_widget(box2)
+        graficas_tab.add_widget(top_box)
+        return tabbed_panel
 
 
     def ble_connect_callback(self, instance):
