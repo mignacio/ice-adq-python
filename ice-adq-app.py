@@ -28,6 +28,8 @@ o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", T
 pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
 rpm = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
 
+xlim_constant = 60000
+
 measurements = [tace, tadm, tesc, vbat, o2, pace, rpm]
 
 class MainApp(App):
@@ -100,22 +102,22 @@ class MainApp(App):
             vbat_line.set_visible(vbat.visible)
 
             xlim_high = tesc.data[-1][0]
-            xlim_low = xlim_high - 60000 #120 seconds
+            xlim_low = xlim_high - xlim_constant #120 seconds
             gas_v_t.set_xlim(xlim_low, xlim_high)
             gas_v_t.autoscale_view()
 
             xlim_high = o2.data[-1][0]
-            xlim_low = xlim_high - 60000 #120 seconds
+            xlim_low = xlim_high - xlim_constant #120 seconds
             vbat_v_t.set_xlim(xlim_low, xlim_high)
             vbat_v_t.autoscale_view()
 
             xlim_high = vbat.data[-1][0]
-            xlim_low = xlim_high - 60000 #120 seconds
+            xlim_low = xlim_high - xlim_constant #120 seconds
             o2_v_t.set_xlim(xlim_low, xlim_high)
             o2_v_t.autoscale_view()
 
             xlim_high = tace.data[-1][0]
-            xlim_low = xlim_high - 60000
+            xlim_low = xlim_high - xlim_constant
             ace_v_t.set_xlim(xlim_low, xlim_high)
             #axes[3].autoscale_view
 
@@ -130,11 +132,13 @@ class MainApp(App):
         tabbed_panel = TabbedPanel(do_default_tab=False)
         graficas_tab = TabbedPanelItem(text='Graficas')
         config_tab = TabbedPanelItem(text='Config')
+        log_tab = TabbedPanelItem(text='Log')
         tabbed_panel.add_widget(graficas_tab)
         tabbed_panel.add_widget(config_tab)
+        tabbed_panel.add_widget(log_tab)
 
         top_box = BoxLayout(orientation = 'vertical', spacing=10)
-        box = BoxLayout( orientation = 'horizontal', spacing=8, size_hint=(1, 0.05))
+        btn_box = BoxLayout( orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
 
         self.connect_btn = Button(text="Connect", size_hint=(0.125, 1))
         self.show_tadm_btn = Button(text="Tadm", size_hint=(0.125, 1))
@@ -152,32 +156,47 @@ class MainApp(App):
         self.show_rpm_btn = Button(text="RPM", size_hint=(0.125, 1))
         self.show_rpm_btn.bind(on_press=self.on_rpm_active)
 
-        box.add_widget(self.connect_btn)
-        box.add_widget(self.show_tadm_btn)
-        box.add_widget(self.show_tesc_btn)
-        box.add_widget(self.show_tace_btn)
-        box.add_widget(self.show_pace_btn)
-        box.add_widget(self.show_vbat_btn)
-        box.add_widget(self.show_o2_btn)
-        box.add_widget(self.show_rpm_btn)
+        btn2_box = BoxLayout( orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.sec10_btn = Button(text="10 sec.", size_hint=(0.25, 1))
+        self.sec10_btn.bind(on_press=self.on_sec10_callback)
+        self.sec30_btn = Button(text="30 sec.", size_hint=(0.25, 1))
+        self.sec30_btn.bind(on_press=self.on_sec30_callback)
+        self.sec60_btn = Button(text="60 sec.", size_hint=(0.25, 1))
+        self.sec60_btn.bind(on_press=self.on_sec_60_callback)
+        self.sec120_btn = Button(text="120 sec.", size_hint=(0.25, 1))
+        self.sec120_btn.bind(on_press=self.on_sec120_callback)
+
+        btn2_box.add_widget(self.sec10_btn)
+        btn2_box.add_widget(self.sec30_btn)
+        btn2_box.add_widget(self.sec60_btn)
+        btn2_box.add_widget(self.sec120_btn)
+
+        btn_box.add_widget(self.connect_btn)
+        btn_box.add_widget(self.show_tadm_btn)
+        btn_box.add_widget(self.show_tesc_btn)
+        btn_box.add_widget(self.show_tace_btn)
+        btn_box.add_widget(self.show_pace_btn)
+        btn_box.add_widget(self.show_vbat_btn)
+        btn_box.add_widget(self.show_o2_btn)
+        btn_box.add_widget(self.show_rpm_btn)
         self.connect_btn.bind(on_press=self.ble_connect_callback)
 
-        box2 = BoxLayout(orientation = 'vertical', spacing=10, size_hint=(1, 0.95))
+        plot_box = BoxLayout(orientation = 'vertical', spacing=10, size_hint=(1, 0.95))
         self.fig, self.axes = plt.subplots(2,2)
         plt.ion()
         self.canvas = FigureCanvasKivyAgg(self.fig, size_hint=(1, 0.95))
-        box2.add_widget(self.canvas)
+        plot_box.add_widget(self.canvas)
 
         try:
             asyncio.create_task(self.plot())
         except asyncio.CancelledError:
             pass
 
-        top_box.add_widget(box)
-        top_box.add_widget(box2)
+        top_box.add_widget(btn_box)
+        top_box.add_widget(btn2_box)
+        top_box.add_widget(plot_box)
         graficas_tab.add_widget(top_box)
         return tabbed_panel
-
 
     def ble_connect_callback(self, instance):
         try:
@@ -205,6 +224,18 @@ class MainApp(App):
 
     def on_rpm_active(self, instance):
         rpm.visible = not rpm.visible
+
+    def on_sec10_callback(self, instance):
+        xlim_constant = 10000
+
+    def on_sec30_callback(self, instance):
+        xlim_constant = 30000
+
+    def on_sec_60_callback(self, instance):
+        xlim_constant = 60000
+
+    def on_sec120_callback(self, instance):
+        xlim_constant = 12000
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
