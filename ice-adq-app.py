@@ -28,7 +28,7 @@ o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", T
 pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
 rpm = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
 
-measurements = [tace, tadm, tesc, vbat, o2, pace]
+measurements = [tace, tadm, tesc, vbat, o2, pace, rpm]
 
 class MainApp(App):
 
@@ -44,12 +44,12 @@ class MainApp(App):
         gas_v_t.set_ylabel("Temp. [mC]")
         gas_v_t.grid()
 
-        vbat_v_t.set_title("Tension vs tiempo")
+        vbat_v_t.set_title("Tension Bateria vs tiempo")
         vbat_v_t.set_xlabel("Tiempo [ms]")
         vbat_v_t.set_ylabel("Tension [mV]")
         vbat_v_t.grid()
 
-        o2_v_t.set_title("Tension Bateria vs tiempo")
+        o2_v_t.set_title("Tension vs tiempo")
         o2_v_t.set_xlabel("Tiempo [ms]")
         o2_v_t.set_ylabel("Tension [mV]")
         o2_v_t.grid()
@@ -59,22 +59,26 @@ class MainApp(App):
         gas_v_t.legend(loc='upper left')
         gas_v_t.set_ylim(0, 40000)
 
-        o2_line, = vbat_v_t.plot(*(zip(*o2.data)), label="O2.")
+        vbat_line, = vbat_v_t.plot(*(zip(*o2.data)), label="Vbat.")
         vbat_v_t.legend(loc='upper left')
-        vbat_v_t.set_ylim(0, 3300)
+        vbat_v_t.set_ylim(0, 16102)
 
-        vbat_line, = o2_v_t.plot(*zip(*vbat.data), label="Vbat.")
-        o2_v_t.legend()
-        o2_v_t.set_ylim(0, 16102)
+        o2_line, = o2_v_t.plot(*zip(*vbat.data), label="O2.")
+        o2_v_t.legend(loc='upper left')
+        o2_v_t.set_ylim(0, 3300)
+
+        rpm_v_t = o2_v_t.twinx()
+        rpm_line, = rpm_v_t.plot(*zip(*rpm.data), label="RPM.")
+        rpm_v_t.legend(loc='upper right')
 
         tace_line, = ace_v_t.plot(*zip(*pace.data), label="Temp. Ace.")
         ace_v_t.legend(loc='upper left')
         ace_v_t.set_ylim(0, 40000)
         ace_v_t.grid()
 
-        axes3_2 = ace_v_t.twinx()
-        pace_line, = axes3_2.plot(*zip(*tace.data), label="Pres. Ace.")
-        axes3_2 = axes3_2.legend(loc='upper right')
+        pace_v_t = ace_v_t.twinx()
+        pace_line, = pace_v_t.plot(*zip(*tace.data), label="Pres. Ace.")
+        pace_v_t.legend(loc='upper right')
 
         #blitManager = BlitManager(fig.canvas, axes)
 
@@ -83,6 +87,7 @@ class MainApp(App):
             tadm_line.set_data(*zip(*tadm.data))
             tesc_line.set_data(*zip(*tesc.data))
             o2_line.set_data(*zip(*o2.data))
+            rpm_line.set_data(*zip(*rpm.data))
             pace_line.set_data(*zip(*pace.data))
             vbat_line.set_data(*zip(*vbat.data))
             
@@ -90,6 +95,7 @@ class MainApp(App):
             tadm_line.set_visible(tadm.visible)
             tesc_line.set_visible(tesc.visible)
             o2_line.set_visible(o2.visible)
+            rpm_line.set_visible(rpm.visible)
             pace_line.set_visible(pace.visible)
             vbat_line.set_visible(vbat.visible)
 
