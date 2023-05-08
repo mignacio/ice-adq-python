@@ -14,6 +14,7 @@ from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.tabbedpanel import TabbedPanel
 from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
 
 now = datetime.datetime.now()
@@ -81,11 +82,16 @@ class MainApp(App):
             tace_line.set_data(*zip(*tace.data))
             tadm_line.set_data(*zip(*tadm.data))
             tesc_line.set_data(*zip(*tesc.data))
-
             o2_line.set_data(*zip(*o2.data))
             pace_line.set_data(*zip(*pace.data))
-
             vbat_line.set_data(*zip(*vbat.data))
+            
+            tace_line.set_visible(tace.visible)
+            tadm_line.set_visible(tadm.visible)
+            tesc_line.set_visible(tesc.visible)
+            o2_line.set_visible(o2.visible)
+            pace_line.set_visible(pace.visible)
+            vbat_line.set_visible(vbat.visible)
 
             xlim_high = tesc.data[-1][0]
             xlim_low = xlim_high - 60000 #120 seconds
@@ -115,45 +121,50 @@ class MainApp(App):
             await asyncio.sleep(1)
 
     def build(self):
-        box = BoxLayout( orientation = 'vertical', spacing=10)
+        top_box = BoxLayout(orientation = 'vertical', spacing=10)
 
-        self.connect_btn = Button(text="Connect", size_hint=(0.125, 0.05))
+        box = BoxLayout( orientation = 'horizontal', spacing=8, size_hint=(1, 0.05))
+        top_box.add_widget(box)
 
-        self.show_tadm_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
-        self.show_tadm_chk.bind(active=self.on_tadm_active)
-        self.show_tesc_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
-        self.show_tesc_chk.bind(active=self.on_tesc_active)
-        self.show_tace_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
-        self.show_tace_chk.bind(active=self.on_tace_active)
-        self.show_pace_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
-        self.show_pace_chk.bind(active=self.on_pace_active)
-        self.show_vbat_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
-        self.show_vbat_chk.bind(active=self.on_vbat_active)
-        self.show_o2_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
-        self.show_o2_chk.bind(active=self.on_o2_active)
-        self.show_rpm_chk = CheckBox(active=True, size_hint=(0.125, 0.05))
-        self.show_rpm_chk.bind(active=self.on_rpm_active)
+        self.connect_btn = Button(text="Connect", size_hint=(0.125, 1))
+
+        self.show_tadm_btn = Button(text="Tadm", size_hint=(0.125, 1))
+        self.show_tadm_btn.bind(on_press=self.on_tadm_active)
+        self.show_tesc_btn = Button(text="Tesc", size_hint=(0.125, 1))
+        self.show_tesc_btn.bind(on_press=self.on_tesc_active)
+        self.show_tace_btn = Button(text="Tace", size_hint=(0.125, 1))
+        self.show_tace_btn.bind(on_press=self.on_tace_active)
+        self.show_pace_btn = Button(text="Pace", size_hint=(0.125, 1))
+        self.show_pace_btn.bind(on_press=self.on_pace_active)
+        self.show_vbat_btn = Button(text="Vbat", size_hint=(0.125, 1))
+        self.show_vbat_btn.bind(on_press=self.on_vbat_active)
+        self.show_o2_btn = Button(text="O2", size_hint=(0.125, 1))
+        self.show_o2_btn.bind(on_press=self.on_o2_active)
+        self.show_rpm_btn = Button(text="RPM", size_hint=(0.125, 1))
+        self.show_rpm_btn.bind(on_press=self.on_rpm_active)
 
         box.add_widget(self.connect_btn)
-        box.add_widget(self.show_tadm_chk)
-        box.add_widget(self.show_tesc_chk)
-        box.add_widget(self.show_tace_chk)
-        box.add_widget(self.show_pace_chk)
-        box.add_widget(self.show_vbat_chk)
-        box.add_widget(self.show_o2_chk)
-        box.add_widget(self.show_rpm_chk)
+        box.add_widget(self.show_tadm_btn)
+        box.add_widget(self.show_tesc_btn)
+        box.add_widget(self.show_tace_btn)
+        box.add_widget(self.show_pace_btn)
+        box.add_widget(self.show_vbat_btn)
+        box.add_widget(self.show_o2_btn)
+        box.add_widget(self.show_rpm_btn)
         self.connect_btn.bind(on_press=self.ble_connect_callback)
 
+        box2 = BoxLayout(orientation = 'vertical', spacing=10, size_hint=(1, 0.95))
+        top_box.add_widget(box2)
         self.fig, self.axes = plt.subplots(2,2)
         plt.ion()
-        self.canvas = FigureCanvasKivyAgg(self.fig, size_hint=(1, 0.9))
-        box.add_widget(self.canvas)
+        self.canvas = FigureCanvasKivyAgg(self.fig, size_hint=(1, 0.95))
+        box2.add_widget(self.canvas)
 
         try:
             asyncio.create_task(self.plot())
         except asyncio.CancelledError:
             pass
-        return box
+        return top_box
 
 
     def ble_connect_callback(self, instance):
@@ -162,25 +173,25 @@ class MainApp(App):
         except asyncio.CancelledError:
             pass
 
-    def on_tadm_active():
+    def on_tadm_active(self, instance):
         tadm.visible = not tadm.visible
 
-    def on_tesc_active():
+    def on_tesc_active(self, instance):
         tesc.visible = not tesc.visible
 
-    def on_tace_active():
+    def on_tace_active(self, instance):
         tace.visible = not tace.visible
 
-    def on_pace_active():
+    def on_pace_active(self, instance):
         pace.visible = not pace.visible
-    
-    def on_vbat_active():
+
+    def on_vbat_active(self, instance):
         vbat.visible = not vbat.visible
 
-    def on_o2_active():
+    def on_o2_active(self, instance):
         o2.visible = not o2.visible
 
-    def on_rpm_active():
+    def on_rpm_active(self, instance):
         rpm.visible = not rpm.visible
 
 if __name__ == "__main__":
