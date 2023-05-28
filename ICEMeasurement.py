@@ -7,3 +7,5 @@ class ICEMeasurement:
     data: deque
     file: str
     visible: bool
+    alarm: bool
+    limit: int

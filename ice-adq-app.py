@@ -10,6 +10,7 @@ from BlitManager import BlitManager
 # Kivy imports
 from kivy.lang import Builder
 from kivy.app import App
+from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.floatlayout import FloatLayout
@@ -20,19 +21,60 @@ from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
 now = datetime.datetime.now()
 filename = f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 
-tace = ICEMeasurement('Tace', deque([(0, 0)], maxlen=120), f"Tace-{filename}.csv", True)
-tadm = ICEMeasurement('Tadm', deque([(0, 0)], maxlen=120), f"Tadm-{filename}.csv", True)
-tesc = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=120), f"Tesc-{filename}.csv", True)
-vbat = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=120), f"Vbat-{filename}.csv", True)
-o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", True)
-pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
-rpm = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
+tace    = ICEMeasurement('Tace', deque([(0, 0)], maxlen=120), f"Tace-{filename}.csv", True, False, 33000)
+tadm    = ICEMeasurement('Tadm', deque([(0, 0)], maxlen=120), f"Tadm-{filename}.csv", True, False, 18000)
+tesc    = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=120), f"Tesc-{filename}.csv", True, False, 33000)
+vbat    = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=120), f"Vbat-{filename}.csv", True, False, 15000)
+o2      = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", True, False, 33000)
+pace    = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True, False, 9000)
+rpm     = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True, False, 33000)
 
 measurements = [tace, tadm, tesc, vbat, o2, pace, rpm]
-
 class MainApp(App):
 
     xlim_global = 60000
+
+    async def alarms(self):
+        alarm_color = (1,0,0,1)
+        def_color = (1,1,1,1)
+
+        while True:
+            if tace.alarm == True:
+                self.ace_label.color = alarm_color
+            else:
+                self.ace_label.color = def_color
+
+            if tadm.alarm == True:
+                self.adm_label.color = alarm_color
+            else:
+                self.adm_label.color = def_color
+
+            if tesc.alarm == True:
+                self.esc_label.color = alarm_color
+            else:
+                self.esc_label.color = def_color
+
+            if vbat.alarm == True:
+                self.vbat_label.color = alarm_color
+            else:
+                self.vbat_label.color = def_color
+
+            if o2.alarm == True:
+                self.o2_label.color = alarm_color
+            else:
+                self.o2_label.color = def_color
+
+            if pace.alarm == True:
+                self.pace_label.color = alarm_color
+            else:
+                self.pace_label.color = def_color
+
+            if rpm.alarm == True:
+                self.rpm_label.color = alarm_color
+            else:
+                self.rpm_label.color = def_color
+
+            await asyncio.sleep(1)
 
     async def plot(self):
 
@@ -137,7 +179,24 @@ class MainApp(App):
         tabbed_panel.add_widget(log_tab)
 
         top_box = BoxLayout(orientation = 'vertical', spacing=10)
-        btn_box = BoxLayout( orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        btn_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        lbl_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+
+        self.adm_label = Label(text="TAdm")
+        self.esc_label = Label(text="TEsc")
+        self.ace_label = Label(text="TAce")
+        self.pace_label = Label(text="Pace")
+        self.vbat_label = Label(text="VBat")
+        self.o2_label = Label(text="O2")
+        self.rpm_label = Label(text="RPM")
+
+        lbl_box.add_widget(self.adm_label)
+        lbl_box.add_widget(self.esc_label)
+        lbl_box.add_widget(self.ace_label)
+        lbl_box.add_widget(self.pace_label)
+        lbl_box.add_widget(self.vbat_label)
+        lbl_box.add_widget(self.o2_label)
+        lbl_box.add_widget(self.rpm_label)
 
         self.connect_btn = Button(text="Connect", size_hint=(0.125, 1))
         self.show_tadm_btn = Button(text="Tadm", size_hint=(0.125, 1))
@@ -191,8 +250,14 @@ class MainApp(App):
         except asyncio.CancelledError:
             pass
 
+        try:
+            asyncio.create_task(self.alarms())
+        except asyncio.CancelledError:
+            pass
+
         top_box.add_widget(btn_box)
         top_box.add_widget(btn2_box)
+        top_box.add_widget(lbl_box)
         top_box.add_widget(plot_box)
         graficas_tab.add_widget(top_box)
         return tabbed_panel
@@ -232,9 +297,11 @@ class MainApp(App):
 
     def on_sec_60_callback(self, instance):
         self.xlim_global = 60000
+        self.rpm_label.color =(1,1,1,1)
 
     def on_sec120_callback(self, instance):
         self.xlim_global = 120000
+        self.rpm_label.color = (1,0,0,1)
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()

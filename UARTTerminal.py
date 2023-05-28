@@ -34,6 +34,10 @@ async def uart_terminal(measurements: ICEMeasurement):
                 measure.data.append((time,value))
                 with open(measure.file, 'a') as file:
                     file.write(f"{time}, {value}, {error}\n")
+                if value > measure.limit:
+                    measure.alarm = True
+                else:
+                    measure.alarm = False
 
 
     def find_start_and_end_chars(data: bytearray):
