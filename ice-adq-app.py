@@ -28,11 +28,11 @@ o2 = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", T
 pace = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
 rpm = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True)
 
-xlim_constant = 60000
-
 measurements = [tace, tadm, tesc, vbat, o2, pace, rpm]
 
 class MainApp(App):
+
+    xlim_global = 60000
 
     async def plot(self):
 
@@ -79,6 +79,7 @@ class MainApp(App):
         ace_v_t.grid()
 
         pace_v_t = ace_v_t.twinx()
+        pace_v_t.set_ylim(0, 15000)
         pace_line, = pace_v_t.plot(*zip(*tace.data), label="Pres. Ace.")
         pace_v_t.legend(loc='upper right')
 
@@ -102,27 +103,25 @@ class MainApp(App):
             vbat_line.set_visible(vbat.visible)
 
             xlim_high = tesc.data[-1][0]
-            xlim_low = xlim_high - xlim_constant #120 seconds
+            xlim_low = xlim_high - self.xlim_global
             gas_v_t.set_xlim(xlim_low, xlim_high)
             gas_v_t.autoscale_view()
 
             xlim_high = o2.data[-1][0]
-            xlim_low = xlim_high - xlim_constant #120 seconds
+            xlim_low = xlim_high - self.xlim_global
             vbat_v_t.set_xlim(xlim_low, xlim_high)
             vbat_v_t.autoscale_view()
 
             xlim_high = vbat.data[-1][0]
-            xlim_low = xlim_high - xlim_constant #120 seconds
+            xlim_low = xlim_high - self.xlim_global
             o2_v_t.set_xlim(xlim_low, xlim_high)
             o2_v_t.autoscale_view()
 
             xlim_high = tace.data[-1][0]
-            xlim_low = xlim_high - xlim_constant
+            xlim_low = xlim_high - self.xlim_global
             ace_v_t.set_xlim(xlim_low, xlim_high)
-            #axes[3].autoscale_view
-
-            #axes3_2.set_xlim(xlim_low, xlim_high)
-            #axes3_2.autoscale_view
+            ace_v_t.autoscale_view()
+            pace_v_t.autoscale_view()
 
             #blitManager.update()
             self.canvas.draw()
@@ -226,16 +225,16 @@ class MainApp(App):
         rpm.visible = not rpm.visible
 
     def on_sec10_callback(self, instance):
-        xlim_constant = 10000
+        self.xlim_global = 10000
 
     def on_sec30_callback(self, instance):
-        xlim_constant = 30000
+        self.xlim_global = 30000
 
     def on_sec_60_callback(self, instance):
-        xlim_constant = 60000
+        self.xlim_global = 60000
 
     def on_sec120_callback(self, instance):
-        xlim_constant = 12000
+        self.xlim_global = 120000
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
