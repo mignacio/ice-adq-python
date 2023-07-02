@@ -35,7 +35,7 @@ class MainApp(App):
     xlim_global = 60000
 
     async def alarms(self):
-        alarm_color = (1,0,0,1)
+        alarm_color = (1,0.1,0.1,1)
         def_color = (1,1,1,1)
 
         while True:
@@ -101,7 +101,7 @@ class MainApp(App):
         tadm_line, = gas_v_t.plot(*zip(*tadm.data), label="Temp. Adm.")
         tesc_line, = gas_v_t.plot(*zip(*tesc.data), label="Temp. Esc.")
         gas_v_t.legend(loc='upper left')
-        gas_v_t.set_ylim(0, 40000)
+        gas_v_t.set_ylim(0, 4000)
 
         vbat_line, = vbat_v_t.plot(*(zip(*o2.data)), label="Vbat.")
         vbat_v_t.legend(loc='upper left')
@@ -117,7 +117,7 @@ class MainApp(App):
 
         tace_line, = ace_v_t.plot(*zip(*pace.data), label="Temp. Ace.")
         ace_v_t.legend(loc='upper left')
-        ace_v_t.set_ylim(0, 40000)
+        ace_v_t.set_ylim(0, 4000)
         ace_v_t.grid()
 
         pace_v_t = ace_v_t.twinx()
@@ -170,14 +170,88 @@ class MainApp(App):
             await asyncio.sleep(1)
 
     def build(self):
-        tabbed_panel = TabbedPanel(do_default_tab=False)
-        graficas_tab = TabbedPanelItem(text='Graficas')
-        config_tab = TabbedPanelItem(text='Config')
-        log_tab = TabbedPanelItem(text='Log')
-        tabbed_panel.add_widget(graficas_tab)
-        tabbed_panel.add_widget(config_tab)
-        tabbed_panel.add_widget(log_tab)
 
+        def make_minus_btn():
+            return Button(text='-', size_hint=(0.250,1))
+
+        def make_plus_btn():
+            return Button(text='+', size_hint=(0.250,1))
+
+        config_tab = TabbedPanelItem(text='Config')
+        config_box = BoxLayout(orientation = 'vertical', spacing=5)
+        tesc_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.tesc_minus_btn = make_minus_btn()
+        self.tesc_alarm_label = Label(text='48')
+        self.tesc_plus_btn = make_plus_btn()
+        tesc_box.add_widget(Label(text='Alarma T. Esc.'))
+        tesc_box.add_widget(self.tesc_minus_btn)
+        tesc_box.add_widget(self.tesc_alarm_label)
+        tesc_box.add_widget(self.tesc_plus_btn)
+        config_box.add_widget(tesc_box)
+
+        tadm_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.tadm_minus_btn = make_minus_btn()
+        self.tadm_alarm_label = Label(text='40')
+        self.tadm_plus_btn = make_plus_btn()
+        tadm_box.add_widget(Label(text="Alarma T. Adm."))
+        tadm_box.add_widget(self.tadm_minus_btn)
+        tadm_box.add_widget(self.tadm_alarm_label)
+        tadm_box.add_widget(self.tadm_plus_btn)
+        config_box.add_widget(tadm_box)
+
+        tace_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.tace_minus_btn = make_minus_btn()
+        self.tace_alarm_label = Label(text='48')
+        self.tace_plus_btn = make_plus_btn()
+        tace_box.add_widget(Label(text="Alarma T. Ace."))
+        tace_box.add_widget(self.tace_minus_btn)
+        tace_box.add_widget(self.tace_alarm_label)
+        tace_box.add_widget(self.tace_plus_btn)
+        config_box.add_widget(tace_box)
+
+        pace_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.pace_minus_btn = make_minus_btn()
+        self.pace_alarm_label = Label(text='48')
+        self.pace_plus_btn = make_plus_btn()
+        pace_box.add_widget(Label(text="Alarma P. Ace."))
+        pace_box.add_widget(self.pace_minus_btn)
+        pace_box.add_widget(self.pace_alarm_label)
+        pace_box.add_widget(self.pace_plus_btn)
+        config_box.add_widget(pace_box)
+
+        o2_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.o2_minus_btn = make_minus_btn()
+        self.o2_alarm_label = Label(text='48')
+        self.o2_plus_btn = make_plus_btn()
+        o2_box.add_widget(Label(text="Alarma O2."))
+        o2_box.add_widget(self.o2_minus_btn)
+        o2_box.add_widget(self.o2_alarm_label)
+        o2_box.add_widget(self.o2_plus_btn)
+        config_box.add_widget(o2_box)
+
+        rpm_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.rpm_minus_btn = make_minus_btn()
+        self.rpm_alarm_label = Label(text='48')
+        self.rpm_plus_btn = make_plus_btn()
+        rpm_box.add_widget(Label(text="Alarma RPM."))
+        rpm_box.add_widget(self.rpm_minus_btn)
+        rpm_box.add_widget(self.rpm_alarm_label)
+        rpm_box.add_widget(self.rpm_plus_btn)
+        config_box.add_widget(rpm_box)
+
+        vbat_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
+        self.vbat_minus_btn = make_minus_btn()
+        self.vbat_alarm_label = Label(text='48')
+        self.vbat_plus_btn = make_plus_btn()
+        vbat_box.add_widget(Label(text="Alarma V. Bat."))
+        vbat_box.add_widget(self.vbat_minus_btn)
+        vbat_box.add_widget(self.vbat_alarm_label)
+        vbat_box.add_widget(self.vbat_plus_btn)
+        config_box.add_widget(vbat_box)
+
+        config_tab.add_widget(config_box)
+
+        graficas_tab = TabbedPanelItem(text='Graficas')
         top_box = BoxLayout(orientation = 'vertical', spacing=10)
         btn_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
         lbl_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
@@ -260,6 +334,12 @@ class MainApp(App):
         top_box.add_widget(lbl_box)
         top_box.add_widget(plot_box)
         graficas_tab.add_widget(top_box)
+
+        tabbed_panel = TabbedPanel(do_default_tab=False)
+        log_tab = TabbedPanelItem(text='Log')
+        tabbed_panel.add_widget(graficas_tab)
+        tabbed_panel.add_widget(config_tab)
+        tabbed_panel.add_widget(log_tab)
         return tabbed_panel
 
     def ble_connect_callback(self, instance):

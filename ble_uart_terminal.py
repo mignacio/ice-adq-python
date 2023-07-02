@@ -80,9 +80,3 @@ class SayHello(App):
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     loop.run_until_complete(SayHello().async_run())
-    #try:
-    #    loop = asyncio.new_event_loop()
-    #    loop.run_until_complete(main())
-    #except asyncio.CancelledError:
-    #    # task is cancelled on disconnect, so we ignore this error
-    #    pass
