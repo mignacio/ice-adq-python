@@ -21,13 +21,13 @@ from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
 now = datetime.datetime.now()
 filename = f"{now.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 
-tace    = ICEMeasurement('Tace', deque([(0, 0)], maxlen=120), f"Tace-{filename}.csv", True, False, 33000)
-tadm    = ICEMeasurement('Tadm', deque([(0, 0)], maxlen=120), f"Tadm-{filename}.csv", True, False, 18000)
-tesc    = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=120), f"Tesc-{filename}.csv", True, False, 33000)
-vbat    = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=120), f"Vbat-{filename}.csv", True, False, 15000)
-o2      = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", True, False, 33000)
-pace    = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True, False, 9000)
-rpm     = ICEMeasurement('RPM', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True, False, 33000)
+tace    = ICEMeasurement('Tace', deque([(0, 0)], maxlen=120), f"Tace-{filename}.csv", True, False, 33)
+tadm    = ICEMeasurement('Tadm', deque([(0, 0)], maxlen=120), f"Tadm-{filename}.csv", True, False, 18)
+tesc    = ICEMeasurement('Tesc', deque([(0, 0)], maxlen=120), f"Tesc-{filename}.csv", True, False, 33)
+vbat    = ICEMeasurement('Vbat', deque([(0, 0)], maxlen=120), f"Vbat-{filename}.csv", True, False, 15)
+o2      = ICEMeasurement('_O2_', deque([(0, 0)], maxlen=120), f"O2-{filename}.csv", True, False, 33)
+pace    = ICEMeasurement('Pace', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True, False, 90)
+rpm     = ICEMeasurement('RPM_', deque([(0, 0)], maxlen=120), f"Pace-{filename}.csv", True, False, 12000)
 
 measurements = [tace, tadm, tesc, vbat, o2, pace, rpm]
 class MainApp(App):
@@ -101,7 +101,7 @@ class MainApp(App):
         tadm_line, = gas_v_t.plot(*zip(*tadm.data), label="Temp. Adm.")
         tesc_line, = gas_v_t.plot(*zip(*tesc.data), label="Temp. Esc.")
         gas_v_t.legend(loc='upper left')
-        gas_v_t.set_ylim(0, 4000)
+        gas_v_t.set_ylim(-1000, 4000)
 
         vbat_line, = vbat_v_t.plot(*(zip(*o2.data)), label="Vbat.")
         vbat_v_t.legend(loc='upper left')
@@ -117,7 +117,7 @@ class MainApp(App):
 
         tace_line, = ace_v_t.plot(*zip(*pace.data), label="Temp. Ace.")
         ace_v_t.legend(loc='upper left')
-        ace_v_t.set_ylim(0, 4000)
+        ace_v_t.set_ylim(-1000, 4000)
         ace_v_t.grid()
 
         pace_v_t = ace_v_t.twinx()
@@ -171,18 +171,22 @@ class MainApp(App):
 
     def build(self):
 
-        def make_minus_btn():
-            return Button(text='-', size_hint=(0.250,1))
+        def make_minus_btn(callback):
+            button = Button(text='-', size_hint=(0.250,1))
+            button.bind(on_press=callback)
+            return button
 
-        def make_plus_btn():
-            return Button(text='+', size_hint=(0.250,1))
+        def make_plus_btn(callback):
+            button = Button(text='+', size_hint=(0.250,1))
+            button.bind(on_press=callback)
+            return button
 
         config_tab = TabbedPanelItem(text='Config')
         config_box = BoxLayout(orientation = 'vertical', spacing=5)
         tesc_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
-        self.tesc_minus_btn = make_minus_btn()
-        self.tesc_alarm_label = Label(text='48')
-        self.tesc_plus_btn = make_plus_btn()
+        self.tesc_minus_btn = make_minus_btn(self.on_tesc_minus_btn_callback)
+        self.tesc_alarm_label = Label(text = str(tesc.limit))
+        self.tesc_plus_btn = make_plus_btn(self.on_tesc_plus_btn_callback)
         tesc_box.add_widget(Label(text='Alarma T. Esc.'))
         tesc_box.add_widget(self.tesc_minus_btn)
         tesc_box.add_widget(self.tesc_alarm_label)
@@ -190,9 +194,9 @@ class MainApp(App):
         config_box.add_widget(tesc_box)
 
         tadm_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
-        self.tadm_minus_btn = make_minus_btn()
-        self.tadm_alarm_label = Label(text='40')
-        self.tadm_plus_btn = make_plus_btn()
+        self.tadm_minus_btn = make_minus_btn(self.on_tadm_minus_btn_callback)
+        self.tadm_alarm_label = Label(text = str(tadm.limit))
+        self.tadm_plus_btn = make_plus_btn(self.on_tadm_plus_btn_callback)
         tadm_box.add_widget(Label(text="Alarma T. Adm."))
         tadm_box.add_widget(self.tadm_minus_btn)
         tadm_box.add_widget(self.tadm_alarm_label)
@@ -200,9 +204,9 @@ class MainApp(App):
         config_box.add_widget(tadm_box)
 
         tace_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
-        self.tace_minus_btn = make_minus_btn()
-        self.tace_alarm_label = Label(text='48')
-        self.tace_plus_btn = make_plus_btn()
+        self.tace_minus_btn = make_minus_btn(self.on_tace_minus_btn_callback)
+        self.tace_alarm_label = Label(text = str(tace.limit))
+        self.tace_plus_btn = make_plus_btn(self.on_tace_plus_btn_callback)
         tace_box.add_widget(Label(text="Alarma T. Ace."))
         tace_box.add_widget(self.tace_minus_btn)
         tace_box.add_widget(self.tace_alarm_label)
@@ -210,9 +214,9 @@ class MainApp(App):
         config_box.add_widget(tace_box)
 
         pace_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
-        self.pace_minus_btn = make_minus_btn()
-        self.pace_alarm_label = Label(text='48')
-        self.pace_plus_btn = make_plus_btn()
+        self.pace_minus_btn = make_minus_btn(self.on_pace_minus_btn_callback)
+        self.pace_alarm_label = Label(text = str(pace.limit))
+        self.pace_plus_btn = make_plus_btn(self.on_pace_plus_btn_callback)
         pace_box.add_widget(Label(text="Alarma P. Ace."))
         pace_box.add_widget(self.pace_minus_btn)
         pace_box.add_widget(self.pace_alarm_label)
@@ -220,9 +224,9 @@ class MainApp(App):
         config_box.add_widget(pace_box)
 
         o2_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
-        self.o2_minus_btn = make_minus_btn()
-        self.o2_alarm_label = Label(text='48')
-        self.o2_plus_btn = make_plus_btn()
+        self.o2_minus_btn = make_minus_btn(self.on_o2_minus_btn_callback)
+        self.o2_alarm_label = Label(text = str(o2.limit))
+        self.o2_plus_btn = make_plus_btn(self.on_o2_plus_btn_callback)
         o2_box.add_widget(Label(text="Alarma O2."))
         o2_box.add_widget(self.o2_minus_btn)
         o2_box.add_widget(self.o2_alarm_label)
@@ -230,9 +234,9 @@ class MainApp(App):
         config_box.add_widget(o2_box)
 
         rpm_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
-        self.rpm_minus_btn = make_minus_btn()
-        self.rpm_alarm_label = Label(text='48')
-        self.rpm_plus_btn = make_plus_btn()
+        self.rpm_minus_btn = make_minus_btn(self.on_rpm_minus_btn_callback)
+        self.rpm_alarm_label = Label(text = str(rpm.limit))
+        self.rpm_plus_btn = make_plus_btn(self.on_rpm_plus_btn_callback)
         rpm_box.add_widget(Label(text="Alarma RPM."))
         rpm_box.add_widget(self.rpm_minus_btn)
         rpm_box.add_widget(self.rpm_alarm_label)
@@ -240,9 +244,9 @@ class MainApp(App):
         config_box.add_widget(rpm_box)
 
         vbat_box = BoxLayout(orientation = 'horizontal', spacing=5, size_hint=(1, 0.05))
-        self.vbat_minus_btn = make_minus_btn()
-        self.vbat_alarm_label = Label(text='48')
-        self.vbat_plus_btn = make_plus_btn()
+        self.vbat_minus_btn = make_minus_btn(self.on_vbat_minus_btn_callback)
+        self.vbat_alarm_label = Label(text = str(vbat.limit))
+        self.vbat_plus_btn = make_plus_btn(self.on_vbat_plus_btn_callback)
         vbat_box.add_widget(Label(text="Alarma V. Bat."))
         vbat_box.add_widget(self.vbat_minus_btn)
         vbat_box.add_widget(self.vbat_alarm_label)
@@ -382,6 +386,63 @@ class MainApp(App):
     def on_sec120_callback(self, instance):
         self.xlim_global = 120000
         self.rpm_label.color = (1,0,0,1)
+
+    def on_tesc_minus_btn_callback(self,instance):
+        tesc.limit -= 1
+        self.tesc_alarm_label.text = str(tesc.limit)
+
+    def on_tesc_plus_btn_callback(self,instance):
+        tesc.limit += 1
+        self.tesc_alarm_label.text = str(tesc.limit)
+
+    def on_tadm_minus_btn_callback(self,instance):
+        tadm.limit -= 1
+        self.tadm_alarm_label.text = str(tadm.limit)
+
+    def on_tadm_plus_btn_callback(self,instance):
+        tadm.limit += 1
+        self.tadm_alarm_label.text = str(tadm.limit)
+
+    def on_tace_minus_btn_callback(self,instance):
+        tace.limit -= 1
+        self.tace_alarm_label.text = str(tace.limit)
+
+    def on_tace_plus_btn_callback(self,instance):
+        tace.limit += 1
+        self.tace_alarm_label.text = str(tace.limit)
+
+    def on_pace_minus_btn_callback(self,instance):
+        pace.limit -= 1
+        self.pace_alarm_label.text = str(pace.limit)
+
+    def on_pace_plus_btn_callback(self,instance):
+        pace.limit += 1
+        self.pace_alarm_label.text = str(pace.limit)
+
+    def on_o2_minus_btn_callback(self,instance):
+        o2.limit -= 1
+        self.o2_alarm_label.text = str(o2.limit)
+
+    def on_o2_plus_btn_callback(self,instance):
+        o2.limit += 1
+        self.o2_alarm_label.text = str(o2.limit)
+
+    def on_rpm_minus_btn_callback(self,instance):
+        rpm.limit -= 10
+        self.rpm_alarm_label.text = str(rpm.limit)
+
+    def on_rpm_plus_btn_callback(self,instance):
+        rpm.limit += 10
+        self.rpm_alarm_label.text = str(rpm.limit)
+
+    def on_vbat_minus_btn_callback(self,instance):
+        vbat.limit -= 1
+        self.vbat_alarm_label.text = str(vbat.limit)
+
+    def on_vbat_plus_btn_callback(self,instance):
+        vbat.limit += 1
+        self.vbat_alarm_label.text = str(vbat.limit)
+
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()

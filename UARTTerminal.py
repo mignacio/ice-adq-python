@@ -27,7 +27,9 @@ async def uart_terminal(measurements: ICEMeasurement):
         time = int(splitted[0].decode('ascii'))
         label = splitted[1].decode('ascii')
         value = int(splitted[2].decode('ascii'))
-        error = splitted[3].decode('ascii')
+        scale = int(splitted[3].decode('ascii'))
+        value = value / (10^scale)
+        error = splitted[4].decode('ascii')
 
         for measure in measurements:
             if label == measure.label:
